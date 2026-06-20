@@ -20,10 +20,11 @@ app.use((req, res, next) => {
 app.use("/users", userRouter);
 app.use("/items", itemRouter);
 
-app.use((req, res, next) => {
+app.use((req, res) => {
   res.status(404).send({ message: "Requested resource not found" });
 });
 
 app.listen(PORT, () => {
+  // eslint-disable-next-line no-console
   console.log(`App listening at port ${PORT}`);
 });
