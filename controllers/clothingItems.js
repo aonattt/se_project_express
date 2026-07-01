@@ -2,6 +2,7 @@ const Item = require("../models/clothingItem");
 const {
   ERROR_CODE_400,
   ERROR_CODE_404,
+  ERROR_CODE_403,
   ERROR_CODE_500,
 } = require("../utils/errors");
 
@@ -32,19 +33,37 @@ const createItem = (req, res) => {
 };
 
 const deleteItem = (req, res) => {
-  Item.findByIdAndDelete(req.params.itemId)
+  const { itemId } = req.params;
+  const currentUserId = req.user._id;
+
+  Item.findById(itemId)
     .orFail(() => {
-      const error = new Error("Item ID not found");
+      const error = new Error("Item not found");
       error.statusCode = ERROR_CODE_404;
       throw error;
     })
-    .then((item) => res.status(200).send(item))
+    .then((item) => {
+      if (String(item.owner) !== currentUserId) {
+        const error = new Error("You are not authorized to delete this item");
+        error.statusCode = ERROR_CODE_403;
+        throw error;
+      }
+
+      return item
+        .deleteOne()
+        .then(() =>
+          res.status(200).send({ message: "Item successfully deleted" })
+        );
+    })
     .catch((err) => {
       if (err.name === "CastError") {
         return res.status(ERROR_CODE_400).send({ message: "Invalid item ID" });
       }
-      if (err.statusCode === ERROR_CODE_404) {
-        return res.status(ERROR_CODE_404).send({ message: err.message });
+      if (
+        err.statusCode === ERROR_CODE_404 ||
+        err.statusCode === ERROR_CODE_403
+      ) {
+        return res.status(err.statusCode).send({ message: err.message });
       }
       return res
         .status(ERROR_CODE_500)
@@ -55,8 +74,8 @@ const deleteItem = (req, res) => {
 const likeItem = (req, res) => {
   Item.findByIdAndUpdate(
     req.params.itemId,
-    { $addToSet: { likes: req.user._id } }, // adds _id to array if not present
-    { new: true } // ensures Mongoose returns the updated document
+    { $addToSet: { likes: req.user._id } },
+    { new: true }
   )
     .orFail(() => {
       const error = new Error("Item ID not found");
@@ -68,8 +87,11 @@ const likeItem = (req, res) => {
       if (err.name === "CastError") {
         return res.status(ERROR_CODE_400).send({ message: "Invalid item ID" });
       }
-      if (err.statusCode === ERROR_CODE_404) {
-        return res.status(ERROR_CODE_404).send({ message: err.message });
+      if (
+        err.statusCode === ERROR_CODE_404 ||
+        err.statusCode === ERROR_CODE_403
+      ) {
+        return res.status(err.statusCode).send({ message: err.message });
       }
       return res
         .status(ERROR_CODE_500)
@@ -80,7 +102,7 @@ const likeItem = (req, res) => {
 const dislikeItem = (req, res) => {
   Item.findByIdAndUpdate(
     req.params.itemId,
-    { $pull: { likes: req.user._id } }, // removes _id from array
+    { $pull: { likes: req.user._id } },
     { new: true }
   )
     .orFail(() => {

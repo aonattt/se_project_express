@@ -1,29 +1,31 @@
 const express = require("express");
 const mongoose = require("mongoose");
-const userRouter = require("./routes/users");
-const itemRouter = require("./routes/clothingItems");
+const cors = require("cors");
+const routes = require("./routes");
 
-const { PORT = 3001 } = process.env;
 const app = express();
+const { PORT = 3001 } = process.env;
 
-mongoose.connect("mongodb://127.0.0.1:27017/wtwr_db");
+mongoose
+  .connect("mongodb://127.0.0.1:27017/wtwr_db", {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => console.log("Connected to MongoDB"))
+  .catch((err) => console.error("Database connection error:", err));
+
+app.use(cors());
 
 app.use(express.json());
 
-app.use((req, res, next) => {
-  req.user = {
-    _id: "65f1a2b3c4d5e6f7a8b9c0d1",
-  };
-  next();
-});
-
-app.use("/users", userRouter);
-app.use("/items", itemRouter);
-
-app.use((req, res) => {
-  res.status(404).send({ message: "Requested resource not found" });
+app.use(routes);
+app.use((err, req, res) => {
+  const { statusCode = 500, message } = err;
+  res.status(statusCode).send({
+    message: statusCode === 500 ? "An error occurred on the server" : message,
+  });
 });
 
 app.listen(PORT, () => {
-  console.log(`App listening at port ${PORT}`);
+  console.log(`App is listening on port ${PORT}`);
 });
