@@ -65,7 +65,6 @@ const updateUserProfile = (req, res) => {
 const createUser = async (req, res) => {
   try {
     const { name, avatar, email, password } = req.body;
-    const hashedPassword = await bcrypt.hash(password, 10);
 
     if (!email || !password) {
       return res
@@ -85,17 +84,19 @@ const createUser = async (req, res) => {
     const userResponse = user.toObject();
     delete userResponse.password;
 
-    res.status(201).send(userResponse);
+    return res.status(201).send(userResponse);
   } catch (err) {
     if (err.code === 11000) {
-      res
+      return res
         .status(ERROR_CODE_409)
         .send({ message: "A user with this email already exists" });
-    } else if (err.name === "ValidationError") {
-      res.status(ERROR_CODE_400).send({ message: "Invalid user data passed" });
-    } else {
-      res.status(ERROR_CODE_500).send({ message: "Default server error" });
     }
+    if (err.name === "ValidationError") {
+      return res
+        .status(ERROR_CODE_400)
+        .send({ message: "Invalid user data passed" });
+    }
+    return res.status(ERROR_CODE_500).send({ message: "Default server error" });
   }
 };
 
