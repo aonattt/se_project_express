@@ -2,6 +2,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const routes = require("./routes");
+const { ERROR_CODE_500 } = require("./utils/errors");
 
 const app = express();
 const { PORT = 3001 } = process.env;
@@ -19,10 +20,13 @@ app.use(cors());
 app.use(express.json());
 
 app.use(routes);
-app.use((err, req, res) => {
-  const { statusCode = 500, message } = err;
+app.use((err, req, res, next) => {
+  const { statusCode = ERROR_CODE_500, message } = err;
   res.status(statusCode).send({
-    message: statusCode === 500 ? "An error occurred on the server" : message,
+    message:
+      statusCode === ERROR_CODE_500
+        ? "An error occurred on the server"
+        : message,
   });
 });
 

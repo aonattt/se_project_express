@@ -67,6 +67,14 @@ const createUser = async (req, res) => {
     const { name, avatar, email, password } = req.body;
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    if (!email || !password) {
+      return res
+        .status(ERROR_CODE_400)
+        .send({ message: "Invalid user data passed" });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
     const user = await User.create({
       name,
       avatar,
