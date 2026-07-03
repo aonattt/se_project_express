@@ -104,6 +104,12 @@ const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    if (!email || !password) {
+      return res
+        .status(ERROR_CODE_400)
+        .send({ message: "Email and password are required" });
+    }
+
     const user = await User.findUserByCredentials(email, password);
 
     const token = jwt.sign({ _id: user._id }, JWT_SECRET, { expiresIn: "7d" });
@@ -111,12 +117,11 @@ const login = async (req, res) => {
     res.send({ token });
   } catch (err) {
     if (err.message === "Incorrect email or password") {
-      res
+      return res
         .status(ERROR_CODE_401)
         .send({ message: "Incorrect email or password" });
-    } else {
-      res.status(ERROR_CODE_500).send({ message: "Default server error" });
     }
+    return res.status(ERROR_CODE_500).send({ message: "Default server error" });
   }
 };
 
