@@ -1,52 +1,40 @@
 const Item = require("../models/clothingItem");
-const {
-  ERROR_CODE_400,
-  ERROR_CODE_404,
-  ERROR_CODE_403,
-  ERROR_CODE_500,
-} = require("../utils/errors");
+const BadRequestError = require("../errors/bad-request-err");
+const NotFoundError = require("../errors/not-found-err");
+const UnauthorizedError = require("../errors/unauthorized-err");
+const ForbiddenError = require("../errors/forbidden-err");
+const ConflictError = require("../errors/conflict-err");
 
-const getItems = (req, res) => {
+const getItems = (req, res, next) => {
   Item.find({})
     .then((items) => res.status(200).send(items))
-    .catch(() =>
-      res
-        .status(ERROR_CODE_500)
-        .send({ message: "An error has occurred on the server" })
-    );
+    .catch(next);
 };
 
-const createItem = (req, res) => {
+const createItem = (req, res, next) => {
   const { name, weather, imageUrl } = req.body;
   Item.create({ name, weather, imageUrl, owner: req.user._id })
     .then((item) => res.status(201).send(item))
     .catch((err) => {
       if (err.name === "ValidationError") {
-        return res
-          .status(ERROR_CODE_400)
-          .send({ message: "Invalid data passed to item creation" });
+        next(new BadRequestError("Invalid data passed to item creation"));
+      } else {
+        next(err);
       }
-      return res
-        .status(ERROR_CODE_500)
-        .send({ message: "An error has occurred on the server" });
     });
 };
 
-const deleteItem = (req, res) => {
+const deleteItem = (req, res, next) => {
   const { itemId } = req.params;
   const currentUserId = req.user._id;
 
   Item.findById(itemId)
     .orFail(() => {
-      const error = new Error("Item not found");
-      error.statusCode = ERROR_CODE_404;
-      throw error;
+      throw new NotFoundError("Item not found");
     })
     .then((item) => {
       if (String(item.owner) !== currentUserId) {
-        const error = new Error("You are not authorized to delete this item");
-        error.statusCode = ERROR_CODE_403;
-        throw error;
+        throw new ForbiddenError("You are not authorized to delete this item");
       }
 
       return item
@@ -57,70 +45,48 @@ const deleteItem = (req, res) => {
     })
     .catch((err) => {
       if (err.name === "CastError") {
-        return res.status(ERROR_CODE_400).send({ message: "Invalid item ID" });
+        next(new BadRequestError("Invalid item ID"));
+      } else {
+        next(err);
       }
-      if (
-        err.statusCode === ERROR_CODE_404 ||
-        err.statusCode === ERROR_CODE_403
-      ) {
-        return res.status(err.statusCode).send({ message: err.message });
-      }
-      return res
-        .status(ERROR_CODE_500)
-        .send({ message: "An error has occurred on the server" });
     });
 };
 
-const likeItem = (req, res) => {
+const likeItem = (req, res, next) => {
   Item.findByIdAndUpdate(
     req.params.itemId,
     { $addToSet: { likes: req.user._id } },
     { new: true }
   )
     .orFail(() => {
-      const error = new Error("Item ID not found");
-      error.statusCode = ERROR_CODE_404;
-      throw error;
+      throw new NotFoundError("Item ID not found");
     })
     .then((item) => res.status(200).send(item))
     .catch((err) => {
       if (err.name === "CastError") {
-        return res.status(ERROR_CODE_400).send({ message: "Invalid item ID" });
+        next(new BadRequestError("Invalid item ID"));
+      } else {
+        next(err);
       }
-      if (
-        err.statusCode === ERROR_CODE_404 ||
-        err.statusCode === ERROR_CODE_403
-      ) {
-        return res.status(err.statusCode).send({ message: err.message });
-      }
-      return res
-        .status(ERROR_CODE_500)
-        .send({ message: "An error has occurred on the server" });
     });
 };
 
-const dislikeItem = (req, res) => {
+const dislikeItem = (req, res, next) => {
   Item.findByIdAndUpdate(
     req.params.itemId,
     { $pull: { likes: req.user._id } },
     { new: true }
   )
     .orFail(() => {
-      const error = new Error("Item ID not found");
-      error.statusCode = ERROR_CODE_404;
-      throw error;
+      throw new NotFoundError("Item ID not found");
     })
     .then((item) => res.status(200).send(item))
     .catch((err) => {
       if (err.name === "CastError") {
-        return res.status(ERROR_CODE_400).send({ message: "Invalid item ID" });
+        next(new BadRequestError("Invalid item ID"));
+      } else {
+        next(err);
       }
-      if (err.statusCode === ERROR_CODE_404) {
-        return res.status(ERROR_CODE_404).send({ message: err.message });
-      }
-      return res
-        .status(ERROR_CODE_500)
-        .send({ message: "An error has occurred on the server" });
     });
 };
 

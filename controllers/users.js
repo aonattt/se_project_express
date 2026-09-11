@@ -2,38 +2,28 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { JWT_SECRET } = require("../utils/config");
 const User = require("../models/user");
-const {
-  ERROR_CODE_400,
-  ERROR_CODE_401,
-  ERROR_CODE_404,
-  ERROR_CODE_409,
-  ERROR_CODE_500,
-} = require("../utils/errors");
+const BadRequestError = require("../errors/bad-request-err");
+const NotFoundError = require("../errors/not-found-err");
+const UnauthorizedError = require("../errors/unauthorized-err");
+const ForbiddenError = require("../errors/forbidden-err");
+const ConflictError = require("../errors/conflict-err");
 
-const getCurrentUser = (req, res) => {
+const getCurrentUser = (req, res, next) => {
   User.findById(req.user._id)
     .orFail(() => {
-      const error = new Error("User not found");
-      error.statusCode = ERROR_CODE_404;
-      throw error;
+      throw new NotFoundError("User not found");
     })
     .then((user) => res.status(200).send(user))
     .catch((err) => {
       if (err.name === "CastError") {
-        return res
-          .status(ERROR_CODE_400)
-          .send({ message: "Invalid user ID format" });
+        next(new BadRequestError("Invalid user ID format"));
+      } else {
+        next(err);
       }
-      if (err.statusCode === ERROR_CODE_404) {
-        return res.status(ERROR_CODE_404).send({ message: err.message });
-      }
-      return res
-        .status(ERROR_CODE_500)
-        .send({ message: "An error has occurred on the server" });
     });
 };
 
-const updateUserProfile = (req, res) => {
+const updateUserProfile = (req, res, next) => {
   const { name, avatar } = req.body;
 
   User.findByIdAndUpdate(
@@ -42,34 +32,24 @@ const updateUserProfile = (req, res) => {
     { new: true, runValidators: true }
   )
     .orFail(() => {
-      const error = new Error("User not found");
-      error.statusCode = ERROR_CODE_404;
-      throw error;
+      throw new NotFoundError("User not found");
     })
     .then((user) => res.status(200).send(user))
     .catch((err) => {
       if (err.name === "ValidationError") {
-        return res
-          .status(ERROR_CODE_400)
-          .send({ message: "Invalid data passed" });
+        next(new BadRequestError("Invalid data passed"));
+      } else {
+        next(err);
       }
-      if (err.statusCode === ERROR_CODE_404) {
-        return res.status(ERROR_CODE_404).send({ message: err.message });
-      }
-      return res
-        .status(ERROR_CODE_500)
-        .send({ message: "An error has occurred on the server" });
     });
 };
 
-const createUser = async (req, res) => {
+const createUser = async (req, res, next) => {
   try {
     const { name, avatar, email, password } = req.body;
 
     if (!email || !password) {
-      return res
-        .status(ERROR_CODE_400)
-        .send({ message: "Invalid user data passed" });
+      throw new BadRequestError("Invalid user data passed");
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -87,27 +67,21 @@ const createUser = async (req, res) => {
     return res.status(201).send(userResponse);
   } catch (err) {
     if (err.code === 11000) {
-      return res
-        .status(ERROR_CODE_409)
-        .send({ message: "A user with this email already exists" });
+      next(new ConflictError("A user with this email already exists"));
+    } else if (err.name === "ValidationError") {
+      next(new BadRequestError("Invalid user data passed"));
+    } else {
+      next(err);
     }
-    if (err.name === "ValidationError") {
-      return res
-        .status(ERROR_CODE_400)
-        .send({ message: "Invalid user data passed" });
-    }
-    return res.status(ERROR_CODE_500).send({ message: "Default server error" });
   }
 };
 
-const login = async (req, res) => {
+const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res
-        .status(ERROR_CODE_400)
-        .send({ message: "Email and password are required" });
+      throw new BadRequestError("Email and password are required");
     }
 
     const user = await User.findUserByCredentials(email, password);
@@ -117,11 +91,10 @@ const login = async (req, res) => {
     return res.send({ token });
   } catch (err) {
     if (err.message === "Incorrect email or password") {
-      return res
-        .status(ERROR_CODE_401)
-        .send({ message: "Incorrect email or password" });
+      next(new UnauthorizedError("Incorrect email or password"));
+    } else {
+      next(err);
     }
-    return res.status(ERROR_CODE_500).send({ message: "Default server error" });
   }
 };
 
