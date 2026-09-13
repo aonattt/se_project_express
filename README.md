@@ -1,30 +1,26 @@
-# WTWR (What to Wear) - Backend
+# WTWR (What to Wear?) - Backend
 
-The backend server for the WTWR (What to Wear) application. It provides a RESTful API for managing users, clothing items, and likes, complete with user authentication, authorization, and secure database integration.
+## Description
 
-## Demo & Visuals
+This is the backend server for the WTWR (What to Wear) application, a full-stack project that recommends clothing items based on the current weather. This API handles user authentication, authorization, and database management for users and their clothing items. It features centralized error handling, robust request validation, and comprehensive logging.
 
-- **Video Demonstration:** [https://drive.google.com/file/d/17RrQkkwmuWZOqp1jeOjlJJltjINf6YCF/view?usp=sharing]
+## Technologies and Techniques Used
 
-## Technologies and Techniques
+- **Node.js & Express.js**: Server creation and routing
+- **MongoDB & Mongoose**: Database management and object data modeling
+- **JSON Web Tokens (JWT)**: Secure user authentication and authorization
+- **Celebrate & Joi**: Inbound request data validation
+- **Winston**: Request and error logging
+- **PM2**: Server process management and auto-restarts
+- **Google Cloud Platform (GCP) & Nginx**: Cloud hosting, deployment, and reverse proxy setup
+- **Let's Encrypt**: SSL certificate for secure HTTPS communication
 
-- **Node.js & Express.js:** Constructs the backend server and handles RESTful API routing.
-- **MongoDB & Mongoose:** Manages the database, schema creation, and strict data validation.
-- **JSON Web Tokens (JWT) & bcryptjs:** Handles secure user registration, login authentication, and password hashing.
-- **Nodemon:** Utilized for efficient development with automatic server restarts.
-- **ESLint & Prettier:** Enforces strict code quality and consistent styling across the project.
+## Accessing the Application
 
-## Running the Project
+- **Deployed Application:** https://aonat-wtwr.strangled.net
+- **Deployed API:** https://api.aonat-wtwr.strangled.net
+- **Frontend Repository:** [Click here to view the frontend repository](https://github.com/aonattt/se_project_react)
 
-Install the necessary dependencies before starting the server:
-`npm install`
+## Project Pitch Video
 
-Launch the server on localhost:3001:
-`npm run start`
-
-Launch the server with the hot reload feature for development:
-`npm run dev`
-
-### Testing
-
-Before committing your code, make sure you edit the `sprint.txt` file in the root folder. The `sprint.txt` file should contain the number of the sprint you're currently working on (e.g., 13).
+Check out [this video](https://drive.google.com/file/d/1ux5cQZ-BAjhHDDeIRrXHK0NQ5mPWOR7r/view?usp=sharing), where I describe my project and some of the deployment challenges I faced while building it.
