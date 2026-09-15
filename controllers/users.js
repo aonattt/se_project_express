@@ -5,7 +5,6 @@ const User = require("../models/user");
 const BadRequestError = require("../errors/bad-request-err");
 const NotFoundError = require("../errors/not-found-err");
 const UnauthorizedError = require("../errors/unauthorized-err");
-const ForbiddenError = require("../errors/forbidden-err");
 const ConflictError = require("../errors/conflict-err");
 
 const getCurrentUser = (req, res, next) => {
@@ -67,12 +66,13 @@ const createUser = async (req, res, next) => {
     return res.status(201).send(userResponse);
   } catch (err) {
     if (err.code === 11000) {
-      next(new ConflictError("A user with this email already exists"));
-    } else if (err.name === "ValidationError") {
-      next(new BadRequestError("Invalid user data passed"));
-    } else {
-      next(err);
+      return next(new ConflictError("A user with this email already exists"));
     }
+    if (err.name === "ValidationError") {
+      return next(new BadRequestError("Invalid user data passed"));
+    }
+
+    return next(err);
   }
 };
 
@@ -91,10 +91,9 @@ const login = async (req, res, next) => {
     return res.send({ token });
   } catch (err) {
     if (err.message === "Incorrect email or password") {
-      next(new UnauthorizedError("Incorrect email or password"));
-    } else {
-      next(err);
+      return next(new UnauthorizedError("Incorrect email or password"));
     }
+    return next(err);
   }
 };
 

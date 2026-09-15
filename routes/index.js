@@ -3,18 +3,22 @@ const userRouter = require("./users");
 const itemRouter = require("./clothingItems");
 const { createUser, login } = require("../controllers/users");
 const auth = require("../middlewares/auth");
-const { ERROR_CODE_404 } = require("../utils/errors");
+const NotFoundError = require("../errors/not-found-err");
+const {
+  validateUserBody,
+  validateAuthentication,
+} = require("../middlewares/validation");
 
-router.post("/signup", createUser);
-router.post("/signin", login);
+router.post("/signup", validateUserBody, createUser);
+router.post("/signin", validateAuthentication, login);
 router.use("/items", itemRouter);
 
 router.use(auth);
 
 router.use("/users", userRouter);
 
-router.use((req, res) => {
-  res.status(ERROR_CODE_404).send({ message: "Requested resource not found" });
+router.use((req, res, next) => {
+  next(new NotFoundError("Requested resource not found"));
 });
 
 module.exports = router;
